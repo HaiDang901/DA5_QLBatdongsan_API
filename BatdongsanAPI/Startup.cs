@@ -36,6 +36,8 @@ namespace BatdongsanAPI
             o.UseSqlServer(Configuration.GetConnectionString("Database"))
             .ReplaceService<IQueryTranslationPostprocessorFactory, Microsoft.EntityFrameworkCore.SqlServer.Query.Internal.SqlServer2008QueryTranslationPostprocessorFactory>());
             services.AddControllers();
+            services.AddSwaggerGen();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -51,6 +53,8 @@ namespace BatdongsanAPI
             .AllowAnyMethod()
             .AllowAnyHeader());
 
+            app.UseSwagger();
+            app.UseSwaggerUI(action => { action.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1"); });
             app.UseHttpsRedirection();
 
             app.UseRouting();

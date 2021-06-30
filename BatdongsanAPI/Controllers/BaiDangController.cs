@@ -31,6 +31,687 @@ namespace BatdongsanAPI.Controllers
         {
             return await _context.TblBaiDangs.Where(x => x.LoaiBaiDang == "1").OrderByDescending(x => x.MaBaiDang).Take(6).ToListAsync();
         }
+        public async Task<ActionResult<IEnumerable<TblBaiDang>>> getTuongTu()
+        {
+            return await _context.TblBaiDangs.OrderByDescending(x => x.MaBaiDang).Take(8).ToListAsync();
+        }
+
+        [HttpGet("{id}")]
+        public  List<TblBaiDang> getAllAddress(string tinh)
+        {
+            List<TblBaiDang> _post = null;
+            var xa =    from t in _context.TblTinhThanhPhos
+                        where t.MaTp == tinh
+                        join h in _context.TblQuanHuyens on t.MaTp equals h.MaTp
+                        join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                        select x.MaXp;
+            foreach (var xp in xa)
+            {
+                var p = _context.TblBaiDangs.Where(x => x.MaXp == xp).ToList();
+
+                if (_post == null)
+                {
+                    _post = p;
+                }
+                else
+                    _post.AddRange(p);
+            }
+            return  _post;
+        }
+
+        [HttpPost]
+        public ResponseModel Search([FromBody] Dictionary<string, object> formData)
+        {
+            var response = new ResponseModel();
+            var page = int.Parse(formData["page"].ToString());
+            var loai = formData["LoaiBds"].ToString();
+            var hinhthuc = formData["HinhThuc"].ToString();
+            var tinh = formData["Tinh"].ToString();
+            var huyen = formData["Huyen"].ToString();
+            var xa = formData["Xa"].ToString();
+            var huong = formData["Huong"].ToString();
+            var min = int.Parse(formData["min"].ToString());
+            var max = int.Parse(formData["max"].ToString());
+            List<TblBaiDang> _post = null;
+            int _skip = (page - 1) * 6;
+            int count = 0;
+            if (loai == "" && huong == "" && tinh == "" && huyen == "" && xa == "")
+            {
+                if (hinhthuc == "all")
+                {
+                    response.TotalItems = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2").Count();
+
+                    _post = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2").OrderByDescending(x => x.LoaiBaiDang).Skip(_skip).Take(6).ToList();
+
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (hinhthuc == "ban")
+                {
+                    response.TotalItems = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "1").Count();
+
+                    _post = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "1").OrderByDescending(x => x.LoaiBaiDang).Skip(_skip).Take(6).ToList();
+
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (hinhthuc == "chothue")
+                {
+                    response.TotalItems = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "2").Count();
+
+                    _post = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "2").OrderByDescending(x => x.LoaiBaiDang).Skip(_skip).Take(6).ToList();
+
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (hinhthuc != "all" && hinhthuc != "ban" && hinhthuc != "chothue")
+                {
+                    response.TotalItems = _context.TblBaiDangs.Where(x => x.MaHinhThuc == hinhthuc).Count();
+
+                    _post = _context.TblBaiDangs.Where(x => x.MaHinhThuc == hinhthuc).OrderByDescending(x => x.LoaiBaiDang).Skip(_skip).Take(6).ToList();
+
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+            }
+            if (hinhthuc == "" || loai == "" || huong == "")
+            {
+                if (xa != "")
+                {
+                    response.TotalItems = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Count();
+                    _post = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (huyen != "")
+                {
+                    var xaphuong = from h in _context.TblQuanHuyens
+                                   where h.MaQh == huyen
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post.OrderByDescending(x => x.LoaiBaiDang).Skip(_skip).Take(6).ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (tinh != "")
+                {
+                    var xaphuong = from t in _context.TblTinhThanhPhos
+                                   where t.MaTp == tinh
+                                   join h in _context.TblQuanHuyens on t.MaTp equals h.MaTp
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+
+            }
+            if (loai != "" && huong == "")
+            {
+                if (xa != "")
+                {
+                    response.TotalItems = _context.TblBaiDangs
+                        .Where(x => x.MaLoaiBds == loai)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Count();
+                    _post = _context.TblBaiDangs
+                        .Where(x => x.MaLoaiBds == loai)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (huyen != "")
+                {
+                    var xaphuong = from h in _context.TblQuanHuyens
+                                   where h.MaQh == huyen
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (tinh != "")
+                {
+                    var xaphuong = from t in _context.TblTinhThanhPhos
+                                   where t.MaTp == tinh
+                                   join h in _context.TblQuanHuyens on t.MaTp equals h.MaTp
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+            }
+            if (loai != "" && huong != "")
+            {
+                if (xa != "")
+                {
+                    response.TotalItems = _context.TblBaiDangs
+                        .Where(x => x.MaLoaiBds == loai)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Where(x => x.HuongNha == huong)
+                        .Count();
+                    _post = _context.TblBaiDangs
+                        .Where(x => x.MaLoaiBds == loai)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Where(x => x.HuongNha == huong)
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (huyen != "")
+                {
+                    var xaphuong = from h in _context.TblQuanHuyens
+                                   where h.MaQh == huyen
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (tinh != "")
+                {
+                    var xaphuong = from t in _context.TblTinhThanhPhos
+                                   where t.MaTp == tinh
+                                   join h in _context.TblQuanHuyens on t.MaTp equals h.MaTp
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaLoaiBds == loai)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+            }
+            if (loai == "" && huong != "")
+            {
+                if (xa != "")
+                {
+                    response.TotalItems = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Where(x => x.HuongNha == huong)
+                        .Count();
+                    _post = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Where(x => x.HuongNha == huong)
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (huyen != "")
+                {
+                    var xaphuong = from h in _context.TblQuanHuyens
+                                   where h.MaQh == huyen
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (tinh != "")
+                {
+                    var xaphuong = from t in _context.TblTinhThanhPhos
+                                   where t.MaTp == tinh
+                                   join h in _context.TblQuanHuyens on t.MaTp equals h.MaTp
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2")
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+            }
+            if (hinhthuc != "" && huong == "")
+            {
+                if (xa != "")
+                {
+                    response.TotalItems = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == hinhthuc)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Count();
+                    _post = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == hinhthuc)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (huyen != "")
+                {
+                    var xaphuong = from h in _context.TblQuanHuyens
+                                   where h.MaQh == huyen
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (tinh != "")
+                {
+                    var xaphuong = from t in _context.TblTinhThanhPhos
+                                   where t.MaTp == tinh
+                                   join h in _context.TblQuanHuyens on t.MaTp equals h.MaTp
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+            }
+            if (hinhthuc != "" && huong != "")
+            {
+                if (xa != "")
+                {
+                    response.TotalItems = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == hinhthuc)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Where(x => x.HuongNha == huong)
+                        .Count();
+                    _post = _context.TblBaiDangs
+                        .Where(x => x.MaHinhThuc == hinhthuc)
+                        .Where(x => x.MaXp == xa)
+                        .Where(x => x.DienTich <= max && x.DienTich >= min)
+                        .Where(x => x.HuongNha == huong)
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (huyen != "")
+                {
+                    var xaphuong = from h in _context.TblQuanHuyens
+                                   where h.MaQh == huyen
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post
+                        .OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6)
+                        .ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+                if (tinh != "")
+                {
+                    var xaphuong = from t in _context.TblTinhThanhPhos
+                                   where t.MaTp == tinh
+                                   join h in _context.TblQuanHuyens on t.MaTp equals h.MaTp
+                                   join x in _context.TblXaPhuongs on h.MaQh equals x.MaQh
+                                   select x.MaXp;
+                    foreach (var xp in xaphuong)
+                    {
+                        count += _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .Count();
+                        var p = _context.TblBaiDangs
+                            .Where(x => x.MaHinhThuc == hinhthuc)
+                            .Where(x => x.MaXp == xp)
+                            .Where(x => x.DienTich <= max && x.DienTich >= min)
+                            .Where(x => x.HuongNha == huong)
+                            .ToList();
+
+                        if (_post == null)
+                        {
+                            _post = p;
+                        }
+                        else
+                            _post.AddRange(p);
+                    }
+                    response.TotalItems = count;
+                    _post = _post.
+                        OrderByDescending(x => x.LoaiBaiDang)
+                        .Skip(_skip)
+                        .Take(6).
+                        ToList();
+                    response.Data = _post;
+                    response.Page = page;
+                    return response;
+                }
+            }
+            response.TotalItems = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2").Count();
+
+            _post = _context.TblBaiDangs.Where(x => x.MaHinhThuc == "1" || x.MaHinhThuc == "2").OrderByDescending(x => x.LoaiBaiDang).Skip(_skip).Take(6).ToList();
+
+            response.Data = _post;
+            response.Page = page;
+            return response;
+            //return null;
+        }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<TblBaiDang>> getDetail(string id)

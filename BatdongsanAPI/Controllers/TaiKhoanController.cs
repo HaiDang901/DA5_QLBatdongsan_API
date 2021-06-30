@@ -6,49 +6,29 @@ using System.Threading.Tasks;
 using BatdongsanAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace BatdongsanAPI.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
-    public class UserController : ControllerBase
+    public class TaiKhoanController : Controller
     {
 
         private readonly CoreDbContext _context;
-        public UserController(CoreDbContext context)
+        public TaiKhoanController(CoreDbContext context)
         {
             _context = context;
         }
 
-        //login
-        [HttpPost]
-        public async Task<IActionResult> Login([FromBody] TblTaiKhoan user)
+        public async Task<IActionResult> Register([FromBody] TblTaiKhoan user)
         {
             var us = user = await _context.TblTaiKhoans.FirstOrDefaultAsync(u => u.TaiKhoan == user.TaiKhoan && u.MatKhau == user.MatKhau && u.LoaiTk == "user");
             return Ok(us);
         }
         [HttpPost]
-        public async Task<IActionResult> LoginAdmin([FromBody] TblTaiKhoan user)
+        public IActionResult Index()
         {
-            var us = user = await _context.TblTaiKhoans.FirstOrDefaultAsync(u => u.TaiKhoan == user.TaiKhoan && u.MatKhau == user.MatKhau && u.LoaiTk == "admin");
-            return Ok(us);
-        }
-        // GET: api/<UserController>
-        //[HttpGet]
-        //public IEnumerable<string> Get()
-        //{
-        //    return new string[] { "value1", "value2" };
-        //}
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<TblTaiKhoan>>> GetAll()
-        {
-            return await _context.TblTaiKhoans.ToListAsync();
-        }
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<TblTaiKhoan>>> GetAllUser()
-        {
-            return await _context.TblTaiKhoans.Where(x=>x.LoaiTk=="user").ToListAsync();
+            return View();
         }
 
         [HttpGet("{id}")]
@@ -57,46 +37,8 @@ namespace BatdongsanAPI.Controllers
             return await _context.TblTaiKhoans.Where(x => x.LoaiTk == id.ToLower()).ToListAsync();
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<TblTaiKhoan>> getUser(string id)
-        {
-            var user = await _context.TblTaiKhoans.FindAsync(id);
-
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            return user;
-        }
-
         [HttpPost]
-        public async Task<int> addAdmin(User _user)
-        {
-            TblTaiKhoan _tk = new TblTaiKhoan()
-            {
-                MaTk = "",
-                TaiKhoan = _user.TaiKhoan,
-                MatKhau = _user.MatKhau,
-                SoDuTk = 0,
-                LoaiTk = "admin",
-                TrangThai = "1"
-            };
-            _context.TblTaiKhoans.Add(_tk);
-            int res;
-            try
-            {
-                res = await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-            return res;
-        }
-
-        [HttpPost]
-        public async Task<int> addUser(TblTaiKhoan _taikhoan)
+        public async Task<int> addAdmin(TblTaiKhoan _taikhoan)
         {
             TblTaiKhoan _tk = new TblTaiKhoan()
             {
@@ -105,7 +47,7 @@ namespace BatdongsanAPI.Controllers
                 TaiKhoan = _taikhoan.TaiKhoan,
                 MatKhau = _taikhoan.MatKhau,
                 DiaChi = _taikhoan.DiaChi,
-                Sdt = _taikhoan.Sdt,
+                Sdt = _taikhoan.Sdt, 
                 Email = _taikhoan.Email,
                 SoDuTk = 0,
                 LoaiTk = "user",
@@ -128,7 +70,7 @@ namespace BatdongsanAPI.Controllers
         public async Task<int> TrangThai(string id)
         {
             TblTaiKhoan _tk = await _context.TblTaiKhoans.FindAsync(id);
-            if(_tk.TrangThai == "1")
+            if (_tk.TrangThai == "1")
             {
                 _tk.TrangThai = "0";
             }
