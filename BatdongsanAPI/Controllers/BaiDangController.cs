@@ -27,6 +27,7 @@ namespace BatdongsanAPI.Controllers
         }
 
         [HttpGet]
+
         public async Task<ActionResult<IEnumerable<TblBaiDang>>> getVip()
         {
             return await _context.TblBaiDangs.Where(x => x.LoaiBaiDang == "1").OrderByDescending(x => x.MaBaiDang).Take(6).ToListAsync();

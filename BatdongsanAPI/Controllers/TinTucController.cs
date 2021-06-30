@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BatdongsanAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     public class TinTucController : ControllerBase
     {
@@ -47,15 +47,15 @@ namespace BatdongsanAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<int> addPostTT(TblTinTuc post)
+        public async Task<int> addNew(TinTucModel news)
         {
-            TblTinTuc _post = new TblTinTuc()
+            TblTinTuc _new = new TblTinTuc()
             {
                 MaTinTuc = "",
-                TieuDe = post.TieuDe,
-                NoiDung = post.NoiDung
+                TieuDe = news.TieuDe,
+                NoiDung = news.NoiDung
             };
-            _context.TblTinTucs.Add(_post);
+            _context.TblTinTucs.Add(_new);
             int res;
             try
             {
@@ -65,7 +65,7 @@ namespace BatdongsanAPI.Controllers
             {
                 throw new Exception(ex.Message);
             }
-            TblTinTuc _news = _context.TblTinTucs.OrderByDescending(x => x.MaTinTuc).FirstOrDefault();
+            //TblTinTuc _news = _context.TblTinTucs.OrderByDescending(x => x.MaTinTuc).FirstOrDefault();
 
             return res;
 
@@ -73,35 +73,106 @@ namespace BatdongsanAPI.Controllers
 
 
         [HttpPost]
-        public ResponseModel GetNews([FromBody] Dictionary<string, object> formData)
+        public ResponseModel getNews([FromBody] Dictionary<string, object> formData)
         {
             var response = new ResponseModel();
             var page = int.Parse(formData["page"].ToString());
-            //var result = formData["id_user"].ToString();
-            var result = formData["total"].ToString();
-            List<TblTinTuc> _post = null;
-            int _skip = (page - 1) * 6;
-            response.TotalItems = _context.TblTinTucs.Where(x => x.MaTinTuc == result).Count();
+            List<TblTinTuc> _news = null;
+            int _skip = (page - 1) * 10;
+            response.TotalItems = _context.TblTinTucs.Count();
 
-            _post = _context.TblTinTucs.Where(x => x.MaTinTuc == result).OrderByDescending(x => x.MaTinTuc).Skip(_skip).Take(6).ToList();
+            _news = _context.TblTinTucs.OrderByDescending(x => x.MaTinTuc).Skip(_skip).Take(10).ToList();
 
-            response.Data = _post;
+            response.Data = _news;
             response.Page = page;
             return response;
 
             //return null;
         }
 
-        // PUT api/<BaiDangController>/5
+        [HttpDelete("{id}")]
+        public async Task<int> deleteTT(string id)
+        {
+            try
+            {
+                TblTinTuc _news = await _context.TblTinTucs.FindAsync(id);
+                if (_news == null) return -1;
+                _context.TblTinTucs.Remove(_news);
+                await _context.SaveChangesAsync();
+                return 1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+
+        }
+
+        [HttpPut("{id}")]
+        public async Task<int> editNew(string id, TinTucModel news)
+        {
+            try
+            {
+                TblTinTuc _news = await _context.TblTinTucs.FindAsync(id);
+                if (_news == null) return -1;
+                _news.TieuDe = news.TieuDe;
+                _news.NoiDung = news.NoiDung;
+                _context.TblTinTucs.Update(_news);
+                await _context.SaveChangesAsync();
+                return 1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<TblTinTuc>> getDetail(string id)
+        {
+            var news = await _context.TblTinTucs.FindAsync(id);
+
+            if (news == null)
+            {
+                return NotFound();
+            }
+
+            return news;
+        }
+
+        // GET: api/<TinTucController>
+        [HttpGet]
+        public IEnumerable<string> Get()
+        {
+            return new string[] { "value1", "value2" };
+        }
+
+
+        // GET api/<TinTucController>/5
+        [HttpGet("{id}")]
+        public string Get(int id)
+        {
+            return "value";
+        }
+
+        // POST api/<TinTucController>
+        [HttpPost]
+        public void Post([FromBody] string value)
+        {
+        }
+
+        // PUT api/<TinTucController>/5
         [HttpPut("{id}")]
         public void Put(int id, [FromBody] string value)
         {
         }
 
-        // DELETE api/<BaiDangController>/5
+        // DELETE api/<TinTucController>/5
         [HttpDelete("{id}")]
         public void Delete(int id)
         {
         }
+
+
     }
 }
